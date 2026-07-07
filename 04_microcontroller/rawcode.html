@@ -1,5 +1,35 @@
 <link rel="stylesheet" href="../style.css">
 
-<pre><code>// Put your code here
-Serial.print("Hello World!");
+<pre><code>// 
+void setup() {
+    pinMode(D6, INPUT_PULLUP);
+    pinMode(D7, INPUT_PULLUP);
+
+    pinMode(D0, OUTPUT);
+    pinMode(D1, OUTPUT);
+
+}
+
+void loop() {
+bool forward = (digitalRead(D6) == LOW);
+bool backward = (digitalRead(D7) == LOW);
+
+if (forward && !backward)
+{
+  digitalWrite(D0, LOW);
+  digitalWrite(D1, HIGH);
+}
+else if (!forward && backward)
+{
+  digitalWrite(D0, HIGH);
+  digitalWrite(D1, LOW);
+}
+else
+{
+  digitalWrite(D0, LOW);
+  digitalWrite(D1, LOW);
+}
+
+}
+
 </code></pre>
