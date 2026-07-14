@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="../style.css">
+<pre><code>// 
+
+long result;
+int analog_pin = A0;
+int tx_pin = D4;
+
+int i = 0;
+
+void setup() {
+    pinMode(tx_pin, OUTPUT);
+    Serial.begin(9600);
+    delay(1000);
+    Serial.println("Start:");
+}
+
+void loop() {
+    if(i >= 20){return;}
+    result = tx_rx();
+    Serial.println(map(result,0,1,0,1));
+    i++;
+}
+
+
+long tx_rx(){ 
+  int read_high;
+  int read_low;
+  int diff;
+  long int sum;
+  int N_samples = 100;  
+
+  sum = 0;
+
+  for (int i = 0; i < N_samples; i++){
+   digitalWrite(tx_pin,HIGH);             
+   read_high = analogRead(analog_pin);
+   delayMicroseconds(100);                 
+   digitalWrite(tx_pin,LOW);              
+   read_low = analogRead(analog_pin);
+   diff = read_high - read_low;         
+   sum += diff; 
+ }
+  return sum;
+} 
+</code></pre>
