@@ -1,0 +1,56 @@
+<link rel="stylesheet" href="../style.css">
+
+<pre><code>// 
+const int sampleWindow = 50;
+unsigned int sample;
+const int micPin = A0;
+const int ledPin = 9; 
+
+void setup() 
+{
+   Serial.begin(9600);
+   pinMode(ledPin, OUTPUT);
+}
+
+void loop() 
+{
+   unsigned long startMillis = millis();
+   unsigned int peakToPeak = 0; 
+
+   unsigned int signalMax = 0;
+
+   unsigned int signalMin = 1023; 
+
+   while (millis() - startMillis < sampleWindow)
+   {
+      sample = analogRead(micPin); 
+      if (sample < 1024) 
+      {
+         if (sample > signalMax)
+         {
+            signalMax = sample;  
+         }
+         else if (sample < signalMin)
+         {
+            signalMin = sample; 
+         }
+      }
+   }
+   peakToPeak = signalMax - signalMin; 
+
+   int ledBrightness = map(peakToPeak, 20, 250, 0, 255); 
+   
+   ledBrightness = constrain(ledBrightness, 0, 255); 
+
+   analogWrite(ledPin, ledBrightness); 
+
+   long dB = map(peakToPeak, 47, 200, 0, 170);
+
+   Serial.print("Loudness: ");
+   Serial.print(peakToPeak);
+   Serial.print("\t LED Brightness: ");
+   Serial.println(ledBrightness);
+   Serial.print("dB: ");
+   Serial.println(dB);
+}
+</code></pre>
