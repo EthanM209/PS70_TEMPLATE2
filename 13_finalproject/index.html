@@ -25,6 +25,16 @@
       <p>
         My final project was two robots who moved around on screws that where intended to box eachother with the goal of knocking eachoters heads off. In addition the robots are able to be removed from there base and there servo motors are removable from their bodys. The purpos of this is so I can build onto this project in the future either by replacing their arms and adding new wepons or re designing the bodys of the bots entierly. 
       </p>
+
+
+
+      <p>
+        I faced a lot of challenges while building this project. The first was the relization that one xiao in not able to run all 10 servo motors needed for this project despite having 10 pins. The seloution to this was for me to use a second xiao ESP32 to run the other 5 servo motors. Due to the fact that at the time of building this project I only had one contoller capable of communicating with the microcontrollers so my solution was for the one xiao to get the inputs from the controller and run the first 5 motors while any inputs it got to run the second 5 motors where sent through ESP now to the second xiao wich would run its own 5 motors. Later when I got an extra controller I learned that this solution would have been nececary because one xaio only takes inputs from one controller at a time meaning for two people to play against eachother I would need a second microcontroller anyways. 
+
+        The second problem that still harms the project is the arms are designed to by long in order to reach the heads of the other robot. The problem with this is that the robots tend to punch eachtoer in the arms wich can result in the arms being punched off. In the future I am going to attach spring to the servo motors so they are able to move in there slots as to not break but will return to their origonal position. 
+
+        The third problem I faced was powering 10 servo motors draws a lot of current that a 5 volt wall plug cannot suply. My soluttion was to use a 12 volt wall plug and a buck converter to drop it down to 5 volts wich also supplyed my motors with enough current to run all 10 of the single plug. 
+      </p>
       
     </section>
   </body>
