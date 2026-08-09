@@ -1,0 +1,142 @@
+<link rel="stylesheet" href="../style.css">
+
+<pre><code>// 
+    #include <Bluepad32.h>
+#include <ESP32Servo.h>
+
+// ==========================================
+// SERVO OBJECT DECLARATIONS
+// ==========================================
+Servo myServo1;     // D0: 180 Servo (R2 Trigger)
+Servo turnServo1;   // D1: 180 Servo (R2 / L2 Triggers)
+Servo d2Servo1;     // D2: 180 Servo (L2 Trigger)
+Servo driveServo1;  // D3: 360 Servo (Left Stick Y-Axis)
+Servo steerServo1;  // D4: 360 Servo (Left Stick X-Axis)
+
+// ==========================================
+// PIN DEFINITIONS (XIAO ESP32C3)
+// ==========================================
+const int SERVO_PIN_1       = D0;      
+const int TURN_SERVO_PIN_1  = D1; 
+const int D2_SERVO_PIN_1    = D2;   
+const int DRIVE_SERVO_PIN_1 = D3; 
+const int STEER_SERVO_PIN_1 = D4; // D4 is back!
+
+const int DEADZONE = 80; 
+
+ControllerPtr myControllers[BP32_MAX_GAMEPADS];
+
+void processGamepad(ControllerPtr ctl);
+void onConnectedController(ControllerPtr ctl);
+void onDisconnectedController(ControllerPtr ctl);
+
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+
+    // ==========================================
+    // CRITICAL FIX: ALLOCATE ALL 4 TIMERS FOR 5 SERVOS
+    // ==========================================
+    ESP32PWM::allocateTimer(0);
+    ESP32PWM::allocateTimer(1);
+    ESP32PWM::allocateTimer(2);
+    ESP32PWM::allocateTimer(3);
+    
+    // Set standard 50Hz frequency
+    myServo1.setPeriodHertz(50);
+    turnServo1.setPeriodHertz(50);
+    d2Servo1.setPeriodHertz(50);
+    driveServo1.setPeriodHertz(50);
+    steerServo1.setPeriodHertz(50);
+    
+    // Attach all 5 Servos cleanly
+    myServo1.attach(SERVO_PIN_1); 
+    turnServo1.attach(TURN_SERVO_PIN_1);
+    d2Servo1.attach(D2_SERVO_PIN_1);
+    driveServo1.attach(DRIVE_SERVO_PIN_1);
+    steerServo1.attach(STEER_SERVO_PIN_1); // D4 attach
+
+    // Set neutral initial positions
+    myServo1.write(0);      
+    turnServo1.write(90);   
+    d2Servo1.write(180);    
+    driveServo1.write(90);  
+    steerServo1.write(90);  
+
+    Serial.println(">>> System Successfully Initialized on Pins D0, D1, D2, D3, D4! <<<");
+
+    BP32.setup(&onConnectedController, &onDisconnectedController);
+}
+
+void loop() {
+    BP32.update();
+
+    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
+        ControllerPtr myCtl = myControllers[i];
+        if (myCtl && myCtl->isConnected()) {
+            processGamepad(myCtl);
+        }
+    }
+    
+    delay(10);
+}
+
+void onConnectedController(ControllerPtr ctl) {
+    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
+        if (myControllers[i] == nullptr) {
+            Serial.printf(">> Controller connected at index %d <<\n", i);
+            myControllers[i] = ctl;
+            break;
+        }
+    }
+}
+
+void onDisconnectedController(ControllerPtr ctl) {
+    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
+        if (myControllers[i] == ctl) {
+            Serial.printf(">> Controller disconnected from index %d <<\n", i);
+            myControllers[i] = nullptr;
+            break;
+        }
+    }
+}
+
+void processGamepad(ControllerPtr ctl) {
+    // 1. TRIGGERS (D0, D1, D2)
+    if (ctl->r2() || ctl->throttle() > 100) {
+        myServo1.write(60);      
+        d2Servo1.write(180);
+        turnServo1.write(180);
+    } 
+    else if (ctl->l2() || ctl->brake() > 100) {
+        myServo1.write(0);       
+        d2Servo1.write(120);
+        turnServo1.write(0);
+    } 
+    else {
+        myServo1.write(0);       
+        d2Servo1.write(180); 
+        turnServo1.write(90);     
+    }
+
+    // 2. DRIVE Y-AXIS - Left Stick (D3)
+    int axisY1 = ctl->axisY(); 
+    if (axisY1 < -DEADZONE) {
+        driveServo1.write(0);    
+    } else if (axisY1 > DEADZONE) {
+        driveServo1.write(180);  
+    } else {
+        driveServo1.write(90);   
+    }
+
+    // 3. STEER X-AXIS - Left Stick (D4)
+    int axisX1 = ctl->axisX();
+    if (axisX1 < -DEADZONE) {
+        steerServo1.write(180);  
+    } else if (axisX1 > DEADZONE) {
+        steerServo1.write(0);    
+    } else {
+        steerServo1.write(90);   
+    }
+}
+</code></pre>

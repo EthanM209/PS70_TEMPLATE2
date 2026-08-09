@@ -1,0 +1,160 @@
+<link rel="stylesheet" href="../style.css">
+
+<pre><code>//
+    #include <Bluepad32.h>
+#include <ESP32Servo.h>
+
+// ==========================================
+// SERVO OBJECT DECLARATIONS
+// ==========================================
+// Bumper Mechanism Servos (D5, D6, D7)
+Servo myServo1;     // D5: 180 Servo (R1 Bumper)
+Servo turnServo1;   // D6: 180 Servo (R1 / L1 Bumpers)
+Servo d2Servo1;     // D7: 180 Servo (L1 Bumper)
+
+// Right Stick Drive & Steer Servos (D9, D8)
+Servo driveServo1;  // D9: 360 Servo (Right Stick Up/Down)
+Servo steerServo1;  // D8: 360 Servo (Right Stick Left/Right)
+
+// ==========================================
+// PIN DEFINITIONS (XIAO ESP32C3)
+// ==========================================
+const int SERVO_PIN_2       = D7;      
+const int TURN_SERVO_PIN_2  = D8; 
+const int D7_SERVO_PIN_2    = D0;   
+const int DRIVE_SERVO_PIN_1 = D1; 
+const int STEER_SERVO_PIN_1 = D2; 
+
+// Joystick Deadzone threshold
+const int DEADZONE = 80; 
+
+ControllerPtr myControllers[BP32_MAX_GAMEPADS];
+
+// Forward declarations
+void processGamepad(ControllerPtr ctl);
+void onConnectedController(ControllerPtr ctl);
+void onDisconnectedController(ControllerPtr ctl);
+
+void setup() {
+    Serial.begin(115200);
+
+    // ALLOCATE ALL 4 PWM TIMERS (Prevents crash when attaching 5 servos)
+    ESP32PWM::allocateTimer(0);
+    ESP32PWM::allocateTimer(1);
+    ESP32PWM::allocateTimer(2);
+    ESP32PWM::allocateTimer(3);
+    
+    // Set standard 50Hz frequency
+    myServo1.setPeriodHertz(50);
+    turnServo1.setPeriodHertz(50);
+    d2Servo1.setPeriodHertz(50);
+    driveServo1.setPeriodHertz(50);
+    steerServo1.setPeriodHertz(50);
+    
+    // Attach Servos to pins D5 - D9
+    myServo1.attach(SERVO_PIN_2); 
+    turnServo1.attach(TURN_SERVO_PIN_2);
+    d2Servo1.attach(D7_SERVO_PIN_2);
+    driveServo1.attach(DRIVE_SERVO_PIN_1);
+    steerServo1.attach(STEER_SERVO_PIN_1);
+
+    // Initial neutral positions
+    myServo1.write(0);      
+    turnServo1.write(90);   
+    d2Servo1.write(180);    
+    driveServo1.write(90);  
+    steerServo1.write(90);  
+
+    Serial.println("Combined Robot Setup (D5-D9) initialized. Connecting Bluetooth controller...");
+
+    // Initialize Bluepad32 callbacks
+    BP32.setup(&onConnectedController, &onDisconnectedController);
+}
+
+void loop() {
+    // Poll controller events
+    BP32.update();
+
+    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
+        ControllerPtr myCtl = myControllers[i];
+        if (myCtl && myCtl->isConnected() && myCtl->isGamepad()) {
+            processGamepad(myCtl);
+        }
+    }
+    
+    delay(10);
+}
+
+// Callback when a controller connects
+void onConnectedController(ControllerPtr ctl) {
+    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
+        if (myControllers[i] == nullptr) {
+            Serial.printf("Controller connected at index %d\n", i);
+            myControllers[i] = ctl;
+            break;
+        }
+    }
+}
+
+// Callback when a controller disconnects
+void onDisconnectedController(ControllerPtr ctl) {
+    for (int i = 0; i < BP32_MAX_GAMEPADS; i++) {
+        if (myControllers[i] == ctl) {
+            Serial.printf("Controller disconnected from index %d\n", i);
+            myControllers[i] = nullptr;
+            break;
+        }
+    }
+}
+
+void processGamepad(ControllerPtr ctl) {
+    // ==========================================
+    // 1. BUMPER CONTROLS (D5, D6, D7)
+    // ==========================================
+    if (ctl->r1()) {
+        myServo1.write(60);      
+        d2Servo1.write(180);
+        turnServo1.write(180);
+        Serial.println("R1 Bumper Active");
+    } 
+    else if (ctl->l1()) {
+        myServo1.write(0);       
+        d2Servo1.write(140);
+        turnServo1.write(0);
+        Serial.println("L1 Bumper Active");    
+    } 
+    else {
+        myServo1.write(0);       
+        d2Servo1.write(180); 
+        turnServo1.write(90);     
+    }
+
+    // ==========================================
+    // 2. RIGHT STICK Y-AXIS DRIVE (D9)
+    // ==========================================
+    int axisRY1 = ctl->axisRY(); 
+    if (axisRY1 < -DEADZONE) {
+        driveServo1.write(0);    
+        Serial.println("D9: Forward");  
+    } else if (axisRY1 > DEADZONE) {
+        driveServo1.write(180);  
+        Serial.println("D9: Reverse");    
+    } else {
+        driveServo1.write(90);   
+    }
+
+    // ==========================================
+    // 3. RIGHT STICK X-AXIS STEER (D8)
+    // ==========================================
+    int axisRX1 = ctl->axisRX();
+    if (axisRX1 < -DEADZONE) {
+        steerServo1.write(180);  
+        Serial.println("D8: Right");  
+    } else if (axisRX1 > DEADZONE) {
+        steerServo1.write(0);    
+        Serial.println("D8: Left");  
+    } else {
+        steerServo1.write(90);   
+    }
+}
+</code></pre>
